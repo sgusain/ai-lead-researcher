@@ -90,6 +90,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+import re
+
+
 # ─── Helper: Get API key from secrets or sidebar ──────────────────────────────
 
 def get_key(name: str, sidebar_value: str) -> str:
@@ -100,6 +103,17 @@ def get_key(name: str, sidebar_value: str) -> str:
         return st.secrets.get(name, "")
     except Exception:
         return ""
+
+
+def clean_citations(data):
+    """Remove Perplexity citation artifacts like [1], [2] from all string values."""
+    if isinstance(data, str):
+        return re.sub(r'\[\d+\]', '', data).strip()
+    elif isinstance(data, list):
+        return [clean_citations(item) for item in data]
+    elif isinstance(data, dict):
+        return {k: clean_citations(v) for k, v in data.items()}
+    return data
 
 
 # ─── API Functions ─────────────────────────────────────────────────────────────
@@ -127,8 +141,12 @@ def research_company_perplexity(company_name: str, api_key: str) -> dict:
                 "content": (
                     f"Research '{company_name}' for a B2B sales call. "
                     f"Find: industry, founding year, HQ location, employee count, funding/revenue, "
-                    f"3 recent news items from last 6 months with dates, known tech stack, top competitors, "
-                    f"and a 2-sentence summary. Return ONLY the JSON object."
+                    f"3 recent news items from last 6 months with dates, "
+                    f"their ENGINEERING tech stack (programming languages, frameworks, databases, cloud providers — NOT product features), "
+                    f"top competitors (actual competitor companies, NOT parent companies or their own products), "
+                    f"and a 2-sentence summary. "
+                    f"IMPORTANT: Do NOT include citation numbers like [1] [2] [3] in any values. "
+                    f"Return ONLY the JSON object."
                 ),
             },
         ],
@@ -146,7 +164,7 @@ def research_company_perplexity(company_name: str, api_key: str) -> dict:
         content = content.strip()
         if content.startswith("json"):
             content = content[4:].strip()
-        return json.loads(content)
+        return clean_citations(json.loads(content))
     except requests.exceptions.RequestException as e:
         return {"error": f"Perplexity API error: {str(e)}"}
     except (json.JSONDecodeError, KeyError) as e:
@@ -175,11 +193,13 @@ def find_people_perplexity(company_name: str, api_key: str) -> list:
                 "role": "user",
                 "content": (
                     f"Find 3-5 current key decision makers at '{company_name}' — C-suite executives, VPs, or Directors. "
-                    f"Search LinkedIn and the company website for their current titles. "
-                    f"IMPORTANT: For linkedin_url, find each person's PERSONAL LinkedIn profile URL "
-                    f"(like https://linkedin.com/in/firstname-lastname), NOT the company page. "
-                    f"If you cannot find their personal profile, leave linkedin_url as empty string. "
+                    f"Search LinkedIn for each person to find their EXACT profile URL. "
+                    f"For linkedin_url: search 'site:linkedin.com/in {person_name} {company_name}' to find the exact URL slug "
+                    f"(e.g. https://www.linkedin.com/in/ivan-zhao or https://www.linkedin.com/in/abadesi). "
+                    f"The slug is NOT always firstname-lastname — you MUST find the real URL. "
+                    f"If you cannot confirm the exact URL, leave linkedin_url as empty string. "
                     f"For email, use the company's actual email domain in firstname.lastname@domain.com format. "
+                    f"Do NOT include citation numbers like [1] [2] in any values. "
                     f"Return ONLY the JSON array."
                 ),
             },
@@ -198,7 +218,7 @@ def find_people_perplexity(company_name: str, api_key: str) -> list:
         content = content.strip()
         if content.startswith("json"):
             content = content[4:].strip()
-        return json.loads(content)
+        return clean_citations(json.loads(content))
     except requests.exceptions.RequestException as e:
         return [{"error": f"Perplexity API error: {str(e)}"}]
     except (json.JSONDecodeError, KeyError) as e:
@@ -533,12 +553,11 @@ if run_btn and company_name.strip():
                 if "error" in p:
                     st.warning(p["error"])
                     continue
-                # LinkedIn: use direct URL if valid, otherwise generate search link
+                # LinkedIn: only show if Perplexity found the real profile URL
                 if p.get("linkedin_url") and "/in/" in p.get("linkedin_url", ""):
                     linkedin_link = f" · [LinkedIn]({p['linkedin_url']})"
                 else:
-                    search_q = f"{p['name']} {company_name}".replace(" ", "%20")
-                    linkedin_link = f" · [LinkedIn](https://www.linkedin.com/search/results/people/?keywords={search_q})"
+                    linkedin_link = ""
                 location = f"{p.get('city', '')}, {p.get('state', '')}".strip(", ")
                 st.markdown(
                     f"**{p['name']}** — {p['title']}  \n"
