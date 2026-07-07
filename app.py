@@ -194,7 +194,7 @@ def find_people_perplexity(company_name: str, api_key: str) -> list:
                 "content": (
                     f"Find 3-5 current key decision makers at '{company_name}' — C-suite executives, VPs, or Directors. "
                     f"Search LinkedIn for each person to find their EXACT profile URL. "
-                    f"For linkedin_url: search 'site:linkedin.com/in {person_name} {company_name}' to find the exact URL slug "
+                    f"For linkedin_url: search LinkedIn to find each person's exact profile URL slug "
                     f"(e.g. https://www.linkedin.com/in/ivan-zhao or https://www.linkedin.com/in/abadesi). "
                     f"The slug is NOT always firstname-lastname — you MUST find the real URL. "
                     f"If you cannot confirm the exact URL, leave linkedin_url as empty string. "
