@@ -337,15 +337,28 @@ with st.sidebar:
     st.markdown("## ⚙️ Configuration")
     st.markdown("---")
 
-    demo_mode = st.toggle("🎮 Demo Mode (no API keys needed)", value=True)
+    # Check if API keys are configured in Streamlit Cloud secrets
+    has_secrets = False
+    try:
+        has_secrets = bool(st.secrets.get("PERPLEXITY_API_KEY")) and bool(st.secrets.get("CLAUDE_API_KEY"))
+    except Exception:
+        pass
 
-    if not demo_mode:
-        st.markdown("### API Keys")
-        st.caption("Keys entered here stay in your browser session only.")
-        sidebar_perplexity = st.text_input("Perplexity API Key", type="password", help="perplexity.ai/settings/api")
-        sidebar_claude = st.text_input("Claude API Key", type="password", help="console.anthropic.com")
+    if has_secrets:
+        # Secrets configured — no need for demo mode toggle or key fields
+        demo_mode = False
+        sidebar_perplexity = ""
+        sidebar_claude = ""
+        st.success("✅ API keys configured")
     else:
-        sidebar_perplexity = sidebar_claude = ""
+        demo_mode = st.toggle("🎮 Demo Mode (no API keys needed)", value=True)
+        if not demo_mode:
+            st.markdown("### API Keys")
+            st.caption("Keys entered here stay in your browser session only.")
+            sidebar_perplexity = st.text_input("Perplexity API Key", type="password", help="perplexity.ai/settings/api")
+            sidebar_claude = st.text_input("Claude API Key", type="password", help="console.anthropic.com")
+        else:
+            sidebar_perplexity = sidebar_claude = ""
 
     st.markdown("---")
     st.markdown("### 📧 Your Info (for email draft)")
