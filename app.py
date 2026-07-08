@@ -553,11 +553,16 @@ if run_btn and company_name.strip():
                 if "error" in p:
                     st.warning(p["error"])
                     continue
-                # LinkedIn: only show if Perplexity found the real profile URL
+                # LinkedIn: use real URL if found, otherwise best guess firstname-lastname
                 if p.get("linkedin_url") and "/in/" in p.get("linkedin_url", ""):
                     linkedin_link = f" · [LinkedIn]({p['linkedin_url']})"
                 else:
-                    linkedin_link = ""
+                    name_parts = p['name'].lower().split()
+                    if len(name_parts) >= 2:
+                        slug = f"{name_parts[0]}-{name_parts[-1]}"
+                    else:
+                        slug = name_parts[0] if name_parts else ""
+                    linkedin_link = f" · [LinkedIn](https://www.linkedin.com/in/{slug})" if slug else ""
                 location = f"{p.get('city', '')}, {p.get('state', '')}".strip(", ")
                 st.markdown(
                     f"**{p['name']}** — {p['title']}  \n"
