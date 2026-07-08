@@ -480,9 +480,9 @@ if run_btn and company_name.strip():
     # Metrics row
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("⏱️ Time", f"{elapsed:.1f}s")
-    m2.metric("🏢 Industry", company_data.get("industry", "N/A")[:20])
+    m2.metric("🏢 Industry", company_data.get("industry", "N/A")[:25])
     m3.metric("👥 Employees", company_data.get("employee_count", "N/A"))
-    m4.metric("💰 Funding", company_data.get("funding", "N/A")[:20])
+    m4.metric("💰 Funding", company_data.get("funding", "N/A")[:30])
 
     st.markdown("")
 
@@ -553,16 +553,12 @@ if run_btn and company_name.strip():
                 if "error" in p:
                     st.warning(p["error"])
                     continue
-                # LinkedIn: use real URL if found, otherwise best guess firstname-lastname
+                # LinkedIn: use real URL if found, otherwise DuckDuckGo redirect to profile
                 if p.get("linkedin_url") and "/in/" in p.get("linkedin_url", ""):
                     linkedin_link = f" · [LinkedIn]({p['linkedin_url']})"
                 else:
-                    name_parts = p['name'].lower().split()
-                    if len(name_parts) >= 2:
-                        slug = f"{name_parts[0]}-{name_parts[-1]}"
-                    else:
-                        slug = name_parts[0] if name_parts else ""
-                    linkedin_link = f" · [LinkedIn](https://www.linkedin.com/in/{slug})" if slug else ""
+                    search_q = f"{p['name']} {company_name}".replace(" ", "+")
+                    linkedin_link = f" · [LinkedIn](https://duckduckgo.com/?q=!ducky+site:linkedin.com/in+{search_q})"
                 location = f"{p.get('city', '')}, {p.get('state', '')}".strip(", ")
                 st.markdown(
                     f"**{p['name']}** — {p['title']}  \n"
